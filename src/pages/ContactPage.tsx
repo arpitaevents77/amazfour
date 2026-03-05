@@ -24,7 +24,7 @@ const ContactPage: React.FC = () => {
           email: formData.email,
           subject: formData.subject,
           message: formData.message
-        }]);
+        }] as any);
 
       if (error) {
         throw error;
