@@ -112,7 +112,7 @@ const CheckoutPage: React.FC = () => {
           shipping_method: 'standard',
           shipping_cost: shipping,
           payment_method: paymentMethod
-        }])
+        } as any])
         .select()
         .single();
 
