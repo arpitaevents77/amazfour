@@ -238,6 +238,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearCart = async () => {
     try {
+      console.log('Clearing cart...');
       const profile = await getUserProfile();
       if (!profile) {
         console.error('No user profile found');
@@ -261,6 +262,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       setCartItems([]);
+      console.log('Cart cleared successfully');
     } catch (error) {
       console.error('Error clearing cart:', error);
       throw error;

@@ -4,12 +4,8 @@ import { CreditCard, MapPin, Package, Shield } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { supabase } from '../lib/supabase';
-
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
-}
+import { OrderService } from '../services/orderService';
+import { PaymentService } from '../services/paymentService';
 
 interface Address {
   id: string;
@@ -101,36 +97,16 @@ const CheckoutPage: React.FC = () => {
     if (!userProfile || !selectedAddress) return null;
 
     try {
-      const { data: order, error } = await supabase
-        .from('orders')
-        .insert([{
-          user_id: userProfile.id,
-          address_id: selectedAddress.id,
-          total_amount: total,
-          payment_status: 'pending',
-          order_status: 'processing',
-          shipping_method: 'standard',
-          shipping_cost: shipping,
-          payment_method: paymentMethod
-        }])
-        .select()
-        .single();
+      const orderId = await OrderService.createOrder({
+        user_id: userProfile.id,
+        address_id: selectedAddress.id,
+        total_amount: total,
+        shipping_cost: shipping,
+        payment_method: paymentMethod,
+        shipping_method: 'standard'
+      });
 
-      if (error) throw error;
-
-      // Add order items
-      const orderItems = cartItems.map(item => ({
-        order_id: order.id,
-        variant_id: item.variant_id,
-        quantity: item.quantity,
-        price: item.price_at_time
-      }));
-
-      await supabase
-        .from('order_items')
-        .insert(orderItems);
-
-      return order;
+      return orderId;
     } catch (error) {
       console.error('Error creating order:', error);
       throw error;
@@ -140,61 +116,46 @@ const CheckoutPage: React.FC = () => {
   const handleRazorpayPayment = async () => {
     try {
       setLoading(true);
+      console.log('Starting Razorpay payment process');
 
       // Create order in database
-      const order = await createOrder();
-      if (!order) throw new Error('Failed to create order');
+      const orderId = await createOrder();
+      if (!orderId) throw new Error('Failed to create order');
+      console.log('Order created with ID:', orderId);
 
-      // Load Razorpay script
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.async = true;
-      document.body.appendChild(script);
+      // Add order items
+      const orderItems = cartItems.map(item => ({
+        variant_id: item.variant_id,
+        quantity: item.quantity,
+        price: item.price_at_time
+      }));
+      
+      await OrderService.addOrderItems(orderId, orderItems);
+      console.log('Order items added successfully');
 
-      script.onload = () => {
-        const options = {
-          key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-          amount: total * 100,
-          currency: "INR",
-          name: "RegionalMart",
-          description: "Order Payment",
-
-          handler: async (response: any) => {
-            try {
-              await supabase
-                .from("orders")
-                .update({
-                  payment_status: "completed",
-                  razorpay_payment_id: response.razorpay_payment_id
-                })
-                .eq("id", order.id);
-
-              await clearCart();
-
-              navigate(`/order-success/${order.id}`);
-            } catch (error) {
-              console.error(error);
-            }
-          },
-
-          prefill: {
-            name: `${userProfile.first_name} ${userProfile.last_name}`,
-            email: userProfile.email,
-            contact: userProfile.mobile || ""
-          },
-
-          theme: {
-            color: "#F97316"
-          }
-        };
-
-        const razorpay = new window.Razorpay(options);
-        razorpay.open();
-      };
-
-      script.onerror = () => {
-        throw new Error('Failed to load Razorpay');
-      };
+      // Open Razorpay checkout
+      await PaymentService.openRazorpayCheckout({
+        orderId: orderId,
+        amount: total,
+        currency: 'INR',
+        name: 'RegionalMart',
+        description: 'Order Payment',
+        prefill: {
+          name: `${userProfile.first_name} ${userProfile.last_name}`,
+          email: userProfile.email,
+          contact: userProfile.mobile || ''
+        },
+        onSuccess: async (response) => {
+          console.log('Payment successful, clearing cart and redirecting');
+          await clearCart();
+          navigate(`/order-success/${orderId}`);
+        },
+        onError: (error) => {
+          console.error('Payment failed:', error);
+          alert('Payment failed. Please try again.');
+        }
+      });
+      
     } catch (error) {
       console.error('Error processing payment:', error);
       alert('Payment failed. Please try again.');
@@ -206,24 +167,32 @@ const CheckoutPage: React.FC = () => {
   const handleCashOnDelivery = async () => {
     try {
       setLoading(true);
+      console.log('Starting COD order process');
 
-      const order = await createOrder();
-      if (!order) throw new Error('Failed to create order');
+      const orderId = await createOrder();
+      if (!orderId) throw new Error('Failed to create order');
+      console.log('Order created with ID:', orderId);
 
-      // Update payment method
-      await supabase
-        .from('orders')
-        .update({
-          payment_status: 'pending',
-          payment_method: 'cod'
-        })
-        .eq('id', order.id);
+      // Add order items
+      const orderItems = cartItems.map(item => ({
+        variant_id: item.variant_id,
+        quantity: item.quantity,
+        price: item.price_at_time
+      }));
+      
+      await OrderService.addOrderItems(orderId, orderItems);
+      console.log('Order items added successfully');
+
+      // Update order for COD
+      await OrderService.updateOrderForCOD(orderId);
+      console.log('Order updated for COD');
 
       // Clear cart
       await clearCart();
+      console.log('Cart cleared');
 
       // Redirect to success page
-      navigate(`/order-success/${order.id}`);
+      navigate(`/order-success/${orderId}`);
     } catch (error) {
       console.error('Error placing order:', error);
       alert('Failed to place order. Please try again.');
