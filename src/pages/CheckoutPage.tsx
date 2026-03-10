@@ -29,7 +29,7 @@ const CheckoutPage: React.FC = () => {
   const [processingOrder, setProcessingOrder] = useState(false);
 
   const subtotal = getCartTotal();
-  const shipping = subtotal > 500 ? 0 : 50;
+  const shipping = subtotal > 500 ? 0 : 0;
   const total = subtotal + shipping;
 
   useEffect(() => {
