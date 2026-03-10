@@ -49,6 +49,25 @@ const OrderSuccessPage: React.FC = () => {
     }).format(price);
   };
 
+  const formatOrderNumber = (order: OrderData) => {
+    // Use Razorpay order ID if available, otherwise use our order ID
+    if (order.razorpay_order_id) {
+      return order.razorpay_order_id;
+    }
+    if (order.order_number) {
+      return order.order_number;
+    }
+    return `RM${order.id.slice(0, 8).toUpperCase()}`;
+  };
+
+  const formatOrderNumberOld = (order: OrderData) => {
+    // Use Razorpay order ID if available, otherwise use our order ID
+    if (order.razorpay_order_id) {
+      return order.razorpay_order_id;
+    }
+    return `RM${order.id.slice(0, 8).toUpperCase()}`;
+  };
+
   const getEstimatedDelivery = () => {
     const deliveryDate = new Date();
     deliveryDate.setDate(deliveryDate.getDate() + 5); // 5 days from now

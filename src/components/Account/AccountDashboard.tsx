@@ -135,14 +135,28 @@ const AccountDashboard: React.FC = () => {
                     <div key={order.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-semibold text-gray-900">Order #{order.id.slice(0, 8)}</p>
+                          <p className="font-semibold text-gray-900">
+                            Order #{order.razorpay_order_id || order.order_number || order.id.slice(0, 8).toUpperCase()}
+                          </p>
                           <p className="text-sm text-gray-600">
                             Placed on {new Date(order.created_at).toLocaleDateString()}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-gray-900">₹{order.total_amount}</p>
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          <p className="font-semibold text-gray-900">
+                            {new Intl.NumberFormat('en-IN', {
+                              style: 'currency',
+                              currency: 'INR',
+                              minimumFractionDigits: 0,
+                              maximumFractionDigits: 0,
+                            }).format(order.total_amount)}
+                          </p>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            order.order_status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                            order.order_status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                            order.order_status === 'failed' ? 'bg-red-100 text-red-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
                             {order.order_status}
                           </span>
                         </div>
