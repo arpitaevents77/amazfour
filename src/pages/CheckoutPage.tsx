@@ -179,7 +179,6 @@ const CheckoutPage: React.FC = () => {
       setProcessingOrder(true);
 
       // Create order in database
-
       const orderId = await createOrder();
       if (!orderId) {
         throw new Error('Failed to create order');
@@ -205,7 +204,7 @@ const CheckoutPage: React.FC = () => {
           await clearCart();
           // Small delay to ensure order is updated
           setTimeout(() => {
-          navigate(`/order-success/${orderId}`);
+            navigate(`/order-success/${orderId}`);
           }, 1000);
         },
         onError: async (error) => {
@@ -257,8 +256,8 @@ const CheckoutPage: React.FC = () => {
 
       // Small delay to ensure order is updated
       setTimeout(() => {
-      // Redirect to success page
-      navigate(`/order-success/${orderId}`);
+        // Redirect to success page
+        navigate(`/order-success/${orderId}`);
       }, 500);
     } catch (error) {
       console.error('[Checkout] Error placing COD order:', error);
@@ -281,6 +280,7 @@ const CheckoutPage: React.FC = () => {
       console.log('[Checkout] Order already processing');
       return;
     }
+    
     if (paymentMethod === 'razorpay') {
       handleRazorpayPayment();
     } else {
