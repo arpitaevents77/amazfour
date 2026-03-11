@@ -146,7 +146,7 @@ const CheckoutPage: React.FC = () => {
       console.error('Error creating order:', error);
       throw error;
     }
-      if (error) throw error;
+  };
 
   const addOrderItems = async (orderId: string) => {
     console.log('[Checkout] Adding order items for order:', orderId);
@@ -165,6 +165,7 @@ const CheckoutPage: React.FC = () => {
       throw error;
     }
   };
+
   const handleRazorpayPayment = async () => {
     console.log('[Checkout] Starting Razorpay payment process');
     
