@@ -146,22 +146,6 @@ const CheckoutPage: React.FC = () => {
       console.error('Error creating order:', error);
       throw error;
     }
-  };
-      const { data: order, error } = await supabase
-        .from('orders')
-        .insert({
-          user_id: userProfile.id,
-          address_id: selectedAddress.id,
-          total_amount: total,
-          payment_status: 'pending',
-          order_status: 'pending',
-          shipping_method: 'standard',
-          shipping_cost: shipping,
-          payment_method: paymentMethod
-        } as any)
-        .select()
-        .single();
-
       if (error) throw error;
 
   const addOrderItems = async (orderId: string) => {
@@ -233,66 +217,6 @@ const CheckoutPage: React.FC = () => {
         }
       });
       
-      const order = await createOrder();
-      if (!order) throw new Error('Failed to create order');
-
-      // Load Razorpay script
-      if (!window.Razorpay) {
-        const script = document.createElement("script");
-        script.src = "https://checkout.razorpay.com/v1/checkout.js";
-        script.async = true;
-        document.body.appendChild(script);
-
-        await new Promise((resolve) => {
-          script.onload = resolve;
-        });
-      }
-
-      script.onload = () => {
-        const options = {
-          key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-          amount: total * 100,
-          currency: "INR",
-          name: "RegionalMart",
-          description: "Order Payment",
-
-        handler: async (response: any) => {
-          try {
-            await supabase
-              .from("orders")
-              .update({
-                payment_status: "completed",
-                order_status: "confirmed",
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id
-              } as any)
-              .eq("id", order.id);
-
-            await clearCart();
-
-            navigate(`/order-success/${order.id}`);
-          } catch (error) {
-            console.error("Payment update failed:", error);
-          }
-        },
-        prefill: {
-            name: `${userProfile.first_name} ${userProfile.last_name}`,
-            email: userProfile.email,
-            contact: userProfile.mobile || ""
-          },
-
-          theme: {
-            color: "#F97316"
-          }
-        };
-
-        const razorpay = new window.Razorpay(options);
-        razorpay.open();
-      };
-
-      script.onerror = () => {
-        throw new Error('Failed to load Razorpay');
-      };
     } catch (error) {
       console.error('[Checkout] Error processing payment:', error);
       alert('Payment failed. Please try again.');

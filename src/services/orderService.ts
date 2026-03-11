@@ -49,7 +49,7 @@ export class OrderService {
       // Generate order number for COD orders
       const orderNumber = orderData.payment_method === 'cod' 
         ? `RM${Date.now().toString().slice(-8)}` 
-        : undefined;
+        : null;
       
       const orderPayload = {
         user_id: orderData.user_id,
@@ -60,7 +60,7 @@ export class OrderService {
         shipping_method: orderData.shipping_method || 'standard',
         payment_status: 'pending' as const,
         order_status: 'processing' as const,
-        ...(orderNumber && { order_number: orderNumber })
+        order_number: orderNumber
       };
 
       console.log('[Order] Inserting order payload:', orderPayload);
